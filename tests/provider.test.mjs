@@ -146,3 +146,14 @@ test('installation manifest pins the published module and verifies its bytes', a
   assert.equal(entry, `https://github.com/monokaijs/unifiles-youtube-music/releases/download/v${runtime.version}/youtube.js`);
   assert.equal(sha256, createHash('sha256').update(await readFile(new URL('dist/youtube.js', root))).digest('hex'));
 });
+
+
+test('Music episodes are playable audio rather than empty collections', () => {
+  const page = canonical.parsePage({sourceInstanceId:'youtube-music',data:{musicTwoRowItemRenderer:{
+    title:{simpleText:'Episode'},subtitle:{simpleText:'5 min 47 sec • Artist'},navigationEndpoint:{browseEndpoint:{browseId:'MPEDGLNNsj42XJ0'}}
+  }}});
+  assert.equal(page.items[0].reference.itemId, 'GLNNsj42XJ0');
+  assert.equal(page.items[0].playable, true);
+  assert.equal(page.items[0].kind, 'track');
+  assert.equal(page.items[0].subtitle, 'Artist • 5 min 47 sec');
+});

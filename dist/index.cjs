@@ -57,10 +57,15 @@ function renderer(value, source, index) {
   const first = value.flexColumns?.[0]?.musicResponsiveListItemFlexColumnRenderer?.text;
   const title = text(first) ?? text(value.title);
   if (!title) return null;
-  const subtitle = text(value.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text) ?? text(value.subtitle);
+  let subtitle = text(value.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text) ?? text(value.subtitle);
   const endpoint = first?.runs?.[0]?.navigationEndpoint ?? value.navigationEndpoint;
-  const video = value.playlistItemData?.videoId ?? endpoint?.watchEndpoint?.videoId;
   const browse2 = endpoint?.browseEndpoint?.browseId;
+  const episode = /^MPED[A-Za-z0-9_-]{11}$/.test(browse2 ?? "") ? browse2.slice(4) : null;
+  const video = value.playlistItemData?.videoId ?? endpoint?.watchEndpoint?.videoId ?? episode;
+  if (episode && subtitle) {
+    const parts = subtitle.split("•").map((part) => part.trim());
+    if (/^(?:\d+\s+(?:hr|min|sec)\s*)+$/.test(parts[0]) && parts.length > 1) subtitle = [...parts.slice(1), parts[0]].join(" • ");
+  }
   const id = video ?? browse2;
   if (!id) return null;
   const kind = video ? "track" : id.startsWith("UC") ? "artist" : id.startsWith("MPRE") ? "album" : "collection";
