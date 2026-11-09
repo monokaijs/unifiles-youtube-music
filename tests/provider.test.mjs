@@ -143,6 +143,6 @@ test('installation manifest pins the published module and verifies its bytes', a
   const manifest = JSON.parse(document);
   const { entry, sha256, ...runtime } = manifest;
   assert.deepEqual(runtime, JSON.parse(await readFile(new URL('plugin.json', root), 'utf8')));
-  assert.equal(entry, `https://github.com/monokaijs/unifiles-youtube/releases/download/v${runtime.version}/youtube.js`);
+  assert.equal(entry, `https://github.com/monokaijs/unifiles-youtube-music/releases/download/v${runtime.version}/youtube.js`);
   assert.equal(sha256, createHash('sha256').update(await readFile(new URL('dist/youtube.js', root))).digest('hex'));
 });

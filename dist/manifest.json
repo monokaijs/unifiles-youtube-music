@@ -1,7 +1,7 @@
 {
-  "id": "youtube",
+  "id": "youtube-music",
   "name": "YouTube Music",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "apiVersion": 1,
   "capabilities": [
     "http"
@@ -13,6 +13,6 @@
   "playbackHosts": [
     "*.googlevideo.com"
   ],
-  "entry": "https://github.com/monokaijs/unifiles-youtube/releases/download/v1.2.0/youtube.js",
+  "entry": "https://github.com/monokaijs/unifiles-youtube-music/releases/download/v2.0.0/youtube.js",
   "sha256": "ad3a5bf283c325c053e6f7c5ebbecaff045ebc8127a5fde13dc34f13540131d7"
 }

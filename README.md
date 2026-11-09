@@ -1,6 +1,6 @@
 # UniFiles YouTube
 
-[![Build and release](https://github.com/monokaijs/unifiles-youtube/actions/workflows/build.yml/badge.svg)](https://github.com/monokaijs/unifiles-youtube/actions/workflows/build.yml)
+[![Build and release](https://github.com/monokaijs/unifiles-youtube-music/actions/workflows/build.yml/badge.svg)](https://github.com/monokaijs/unifiles-youtube-music/actions/workflows/build.yml)
 
 YouTube Music catalog and audio resolution for **UniFiles plugin API v1**.
 The provider runs in the app's QuickJS interpreter and uses native HTTP through
@@ -13,7 +13,7 @@ exports implement the current UniFiles API; they are not a drop-in MiniP API ada
 
 ## Download
 
-Use a [tagged release](https://github.com/monokaijs/unifiles-youtube/releases) for a
+Use a [tagged release](https://github.com/monokaijs/unifiles-youtube-music/releases) for a
 fixed version, or the committed `dist/` files on `main` for the current build.
 
 | File | Purpose |
@@ -30,18 +30,18 @@ fixed version, or the committed `dist/` files on `main` for the current build.
 Latest release asset URLs:
 
 ```text
-https://github.com/monokaijs/unifiles-youtube/releases/latest/download/manifest.json
-https://github.com/monokaijs/unifiles-youtube/releases/latest/download/youtube.js
-https://github.com/monokaijs/unifiles-youtube/releases/latest/download/youtube.json
-https://github.com/monokaijs/unifiles-youtube/releases/latest/download/index.cjs
-https://github.com/monokaijs/unifiles-youtube/releases/latest/download/SHA256SUMS
+https://github.com/monokaijs/unifiles-youtube-music/releases/latest/download/manifest.json
+https://github.com/monokaijs/unifiles-youtube-music/releases/latest/download/youtube.js
+https://github.com/monokaijs/unifiles-youtube-music/releases/latest/download/youtube.json
+https://github.com/monokaijs/unifiles-youtube-music/releases/latest/download/index.cjs
+https://github.com/monokaijs/unifiles-youtube-music/releases/latest/download/SHA256SUMS
 ```
 
-For a pinned version, replace `latest/download` with `download/v1.2.0`.
+For a pinned version, replace `latest/download` with `download/v2.0.0`.
 The original-style raw CommonJS URL is:
 
 ```text
-https://raw.githubusercontent.com/monokaijs/unifiles-youtube/main/dist/index.cjs
+https://raw.githubusercontent.com/monokaijs/unifiles-youtube-music/main/dist/index.cjs
 ```
 
 Checksums verify file integrity; they are not publisher signatures.
@@ -50,7 +50,7 @@ UniFiles loads this provider only after explicit installation. Open
 **Media → Media sources → + → Install plugin** and paste this manifest URL:
 
 ```text
-https://github.com/monokaijs/unifiles-youtube/releases/latest/download/manifest.json
+https://github.com/monokaijs/unifiles-youtube-music/releases/latest/download/manifest.json
 ```
 
 The root `manifest.json` and `dist/manifest.json` are generated installation
@@ -67,14 +67,14 @@ installation manifest and the legacy `youtube.json` runtime manifest.
 
 ```js
 const page = await browse({
-  sourceInstanceId: 'youtube',
+  sourceInstanceId: 'youtube-music',
   query: 'Beethoven',
   parent: null,
   cursor: null
 });
 
 const playback = await resolve({
-  sourceInstanceId: 'youtube',
+  sourceInstanceId: 'youtube-music',
   itemId: page.items.find(item => item.playable).reference.itemId
 });
 ```
@@ -114,7 +114,7 @@ artifacts using `rquickjs 0.14.0`, matching the UniFiles host's interpreter bind
 These are deterministic offline tests; they do not claim to test YouTube's current
 network behavior or duplicate the app's native HTTP implementation.
 
-Edit `src/index.js`, `src/index.d.ts`, or `manifest.json`, run the checks, and commit
+Edit `src/index.js`, `src/index.d.ts`, or `plugin.json`, run the checks, and commit
 the regenerated `dist/` files. The canonical module remains directly usable by the
 app without a Node.js bundler at app build time.
 
@@ -131,13 +131,13 @@ The build rejects tags that do not match the package/manifest version. Release t
 should be immutable; use a new version for corrections.
 
 ```sh
-npm version 1.2.1 --no-git-tag-version
+npm version 2.0.1 --no-git-tag-version
 # Update plugin.json to the same version.
 npm run check
 git add package.json package-lock.json plugin.json manifest.json dist
-git commit -m "chore(release): prepare v1.2.1"
-git tag -a v1.2.1 -m "YouTube source v1.2.1"
-git push origin main v1.2.1
+git commit -m "chore(release): prepare v2.0.1"
+git tag -a v2.0.1 -m "YouTube source v2.0.1"
+git push origin main v2.0.1
 ```
 
 This repository publishes GitHub source and release assets, not an npm package.
@@ -145,3 +145,7 @@ This repository publishes GitHub source and release assets, not an npm package.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Source split in v2
+
+This is the **YouTube Music** provider (`youtube-music`), renamed from `unifiles-youtube`. Install its new manifest URL to add it as a separate source. The [regular YouTube provider](https://github.com/monokaijs/unifiles-youtube) has ID `youtube`. Both can be installed together; neither ships built into UniFiles. Older `youtube` references remain valid video IDs in the regular provider. Legacy release assets are retained at their original URLs.

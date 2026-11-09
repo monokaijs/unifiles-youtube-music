@@ -1,7 +1,7 @@
 {
-  "id": "youtube",
+  "id": "youtube-music",
   "name": "YouTube Music",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "apiVersion": 1,
   "capabilities": [
     "http"
