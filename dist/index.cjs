@@ -22,6 +22,7 @@ __export(index_exports, {
   browse: () => browse,
   parsePage: () => parsePage,
   parsePlayback: () => parsePlayback,
+  related: () => related,
   resolve: () => resolve
 });
 module.exports = __toCommonJS(index_exports);
@@ -178,7 +179,23 @@ async function browse({ sourceInstanceId, parent = null, query = null, cursor = 
     headers: { "Content-Type": "application/json", "Origin": "https://music.youtube.com" },
     body: JSON.stringify(body)
   });
-  return parsePage({ data, sourceInstanceId, parent, query, cursor, offset });
+  const page = parsePage({ data, sourceInstanceId, parent, query, cursor, offset });
+  if (parent === null && query === null && cursor === null && page.items.length <= 498) {
+    const links = [["FEmusic_charts", "Charts"], ["FEmusic_new_releases_videos", "New music videos"]].map(([id, title]) => ({
+      id: `navigation:${id}`,
+      reference: { sourceInstanceId, itemId: id },
+      title,
+      kind: "collection",
+      subtitle: null,
+      artwork: null,
+      durationMs: null,
+      playable: false,
+      resumePositionMs: 0
+    }));
+    page.items.unshift(...links);
+    page.sections.unshift({ title: "Explore", itemIds: links.map((item) => item.id) });
+  }
+  return page;
 }
 function parsePlayback({ data }) {
   const status = data.playabilityStatus?.status;
@@ -197,7 +214,8 @@ function parsePlayback({ data }) {
     canDownload: true
   };
 }
-async function resolve({ itemId }) {
+async function resolve({ itemId, options = {} }) {
+  if (options.mode && options.mode !== "audio") fail("unsupported", "This source supports audio playback");
   videoId(itemId);
   const data = await host.http.json({
     url: "https://www.youtube.com/youtubei/v1/player",
@@ -206,4 +224,7 @@ async function resolve({ itemId }) {
     body: JSON.stringify({ context: { client: { clientName: "ANDROID", clientVersion: "21.02.35", androidSdkVersion: 30, osName: "Android", osVersion: "11", hl: "en", gl: "US" } }, videoId: itemId, contentCheckOk: true, racyCheckOk: true })
   });
   return parsePlayback({ data });
+}
+async function related({ sourceInstanceId, itemId, cursor = null }) {
+  return browse({ sourceInstanceId, parent: `related:${itemId}`, cursor });
 }

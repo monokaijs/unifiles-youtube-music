@@ -1,6 +1,6 @@
 {
   "name": "unifiles-youtube-music",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "YouTube Music provider for the UniFiles JavaScript plugin API",
   "private": true,
   "type": "module",

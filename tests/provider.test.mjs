@@ -126,7 +126,7 @@ test('native plugin files and checksums match their source', async () => {
   assert.equal(await readFile(new URL('plugin.json', root), 'utf8'), await readFile(new URL('dist/youtube.json', root), 'utf8'));
   const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'));
   assert.deepEqual(normalize(manifest.capabilities), ['http']);
-  assert.equal(manifest.apiVersion, 1);
+  assert.equal(manifest.apiVersion, 2);
   const sums = (await readFile(new URL('dist/SHA256SUMS', root), 'utf8')).trim().split('\n');
   const files = (await readdir(new URL('dist/', root))).filter(file => file !== 'SHA256SUMS').sort();
   assert.deepEqual(sums.map(line => line.split('  ')[1]), files);

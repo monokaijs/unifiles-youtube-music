@@ -1,8 +1,8 @@
 {
   "id": "youtube-music",
   "name": "YouTube Music",
-  "version": "2.0.1",
-  "apiVersion": 1,
+  "version": "3.0.0",
+  "apiVersion": 2,
   "capabilities": [
     "http"
   ],
@@ -13,6 +13,21 @@
   "playbackHosts": [
     "*.googlevideo.com"
   ],
-  "entry": "https://github.com/monokaijs/unifiles-youtube-music/releases/download/v2.0.1/youtube.js",
-  "sha256": "6493b80a704b2a6c5f0d588451548a7744a73f09984b590d69d210e06bb94b49"
+  "mediaCapabilities": {
+    "audio": true,
+    "video": false,
+    "search": true,
+    "downloads": true,
+    "related": true,
+    "details": false,
+    "qualitySelection": false
+  },
+  "artworkHosts": [
+    "*.ytimg.com",
+    "yt3.ggpht.com",
+    "lh3.googleusercontent.com",
+    "yt3.googleusercontent.com"
+  ],
+  "entry": "https://github.com/monokaijs/unifiles-youtube-music/releases/download/v3.0.0/youtube.js",
+  "sha256": "769b0ad28fa26039870c44b5a21833f63e6bd7698f90c54c71c783ce6eb9c08c"
 }

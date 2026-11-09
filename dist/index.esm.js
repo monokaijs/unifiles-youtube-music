@@ -152,7 +152,23 @@ async function browse({ sourceInstanceId, parent = null, query = null, cursor = 
     headers: { "Content-Type": "application/json", "Origin": "https://music.youtube.com" },
     body: JSON.stringify(body)
   });
-  return parsePage({ data, sourceInstanceId, parent, query, cursor, offset });
+  const page = parsePage({ data, sourceInstanceId, parent, query, cursor, offset });
+  if (parent === null && query === null && cursor === null && page.items.length <= 498) {
+    const links = [["FEmusic_charts", "Charts"], ["FEmusic_new_releases_videos", "New music videos"]].map(([id, title]) => ({
+      id: `navigation:${id}`,
+      reference: { sourceInstanceId, itemId: id },
+      title,
+      kind: "collection",
+      subtitle: null,
+      artwork: null,
+      durationMs: null,
+      playable: false,
+      resumePositionMs: 0
+    }));
+    page.items.unshift(...links);
+    page.sections.unshift({ title: "Explore", itemIds: links.map((item) => item.id) });
+  }
+  return page;
 }
 function parsePlayback({ data }) {
   const status = data.playabilityStatus?.status;
@@ -171,7 +187,8 @@ function parsePlayback({ data }) {
     canDownload: true
   };
 }
-async function resolve({ itemId }) {
+async function resolve({ itemId, options = {} }) {
+  if (options.mode && options.mode !== "audio") fail("unsupported", "This source supports audio playback");
   videoId(itemId);
   const data = await host.http.json({
     url: "https://www.youtube.com/youtubei/v1/player",
@@ -181,9 +198,13 @@ async function resolve({ itemId }) {
   });
   return parsePlayback({ data });
 }
+async function related({ sourceInstanceId, itemId, cursor = null }) {
+  return browse({ sourceInstanceId, parent: `related:${itemId}`, cursor });
+}
 export {
   browse,
   parsePage,
   parsePlayback,
+  related,
   resolve
 };
