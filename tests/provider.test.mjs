@@ -126,7 +126,7 @@ test('native plugin files and checksums match their source', async () => {
   assert.equal(await readFile(new URL('plugin.json', root), 'utf8'), await readFile(new URL('dist/youtube.json', root), 'utf8'));
   const manifest = JSON.parse(await readFile(new URL('manifest.json', root), 'utf8'));
   assert.deepEqual(normalize(manifest.capabilities), ['http']);
-  assert.equal(manifest.apiVersion, 2);
+  assert.equal(manifest.apiVersion, 3);
   const sums = (await readFile(new URL('dist/SHA256SUMS', root), 'utf8')).trim().split('\n');
   const files = (await readdir(new URL('dist/', root))).filter(file => file !== 'SHA256SUMS').sort();
   assert.deepEqual(sums.map(line => line.split('  ')[1]), files);
@@ -155,5 +155,45 @@ test('Music episodes are playable audio rather than empty collections', () => {
   assert.equal(page.items[0].reference.itemId, 'GLNNsj42XJ0');
   assert.equal(page.items[0].playable, true);
   assert.equal(page.items[0].kind, 'track');
-  assert.equal(page.items[0].subtitle, 'Artist • 5 min 47 sec');
+  assert.equal(page.items[0].subtitle, 'Artist · 5 min 47 sec');
+});
+
+test('songs carry structured credits and a clean display line', () => {
+  const song = { musicResponsiveListItemRenderer: {
+    flexColumns: [
+      { musicResponsiveListItemFlexColumnRenderer: { text: { runs: [{ text: 'Title', navigationEndpoint: { watchEndpoint: { videoId: 'jNQXAC9IVRw' } } }] } } },
+      { musicResponsiveListItemFlexColumnRenderer: { text: { runs: [
+        { text: 'Song' }, { text: ' • ' },
+        { text: 'Singer - Topic', navigationEndpoint: { browseEndpoint: { browseId: 'UCsinger' } } }, { text: ' • ' },
+        { text: 'Record', navigationEndpoint: { browseEndpoint: { browseId: 'MPREb_record' } } }, { text: ' • 13M views' },
+      ] } } },
+    ],
+    thumbnail: { thumbnails: [{ url: 'https://i.ytimg.com/vi/x/hq720.jpg' }] },
+  } };
+  const item = canonical.parsePage({ sourceInstanceId: 'youtube-music', query: 'x', data: [song] }).items[0];
+  assert.equal(item.artist, 'Singer');
+  assert.equal(item.album, 'Record');
+  assert.equal(item.subtitle, 'Singer · Record');
+  assert.equal(item.artworkAspect, 'wide');
+  const plain = canonical.parsePage({ sourceInstanceId: 'youtube-music', query: 'x', data: { musicTwoRowItemRenderer: {
+    title: { simpleText: 'Title' }, subtitle: { simpleText: 'Song • Singer - Topic • 1.2M views' }, navigationEndpoint: { watchEndpoint: { videoId: 'jNQXAC9IVRw' } },
+  } } }).items[0];
+  assert.equal(plain.artist, 'Singer');
+  assert.equal(plain.subtitle, 'Singer');
+  assert.equal(plain.album, null);
+});
+
+test('playback states when its signed URL expires', () => {
+  const resolved = canonical.parsePlayback({ data: player({ adaptiveFormats: [{ mimeType: 'audio/mp4', url: 'https://r1.googlevideo.com/a?expire=2000000000', bitrate: 1 }] }) });
+  assert.equal(resolved.expiresAt, 2000000000000);
+});
+
+test('joint credits stay whole and durations stay out of the display line', () => {
+  const item = canonical.parsePage({ sourceInstanceId: 'youtube-music', query: 'x', data: { musicTwoRowItemRenderer: {
+    title: { simpleText: 'Title' }, subtitle: { runs: [{ text: 'A', navigationEndpoint: { browseEndpoint: { browseId: 'UCa' } } }, { text: ' & ' }, { text: 'B', navigationEndpoint: { browseEndpoint: { browseId: 'UCb' } } }, { text: ' • 3:21' }] },
+    navigationEndpoint: { watchEndpoint: { videoId: 'jNQXAC9IVRw' } },
+  } } }).items[0];
+  assert.equal(item.artist, 'A & B');
+  assert.equal(item.subtitle, 'A & B');
+  assert.equal(item.durationMs, 201000);
 });

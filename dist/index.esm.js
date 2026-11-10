@@ -27,11 +27,29 @@ function duration(value) {
   const ms = value.split(":").reduce((total, part) => total * 60 + Number(part), 0) * 1e3;
   return Number.isSafeInteger(ms) ? ms : null;
 }
+function expiresAt(url) {
+  const seconds = Number(/[?&]expire=(\d+)/.exec(url)?.[1]);
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds * 1e3 : null;
+}
+var kindLabels = /* @__PURE__ */ new Set(["Song", "Video", "Album", "Single", "EP", "Playlist"]);
+var isCount = (fact) => / (?:views|subscribers|plays)$/.test(fact);
+var facts = (value) => (value ?? "").split(/[•·]/).map((part) => part.trim()).filter(Boolean);
+var isClock = (fact) => /^\d+(?::\d+)+$/.test(fact);
+function credits(byline, line) {
+  const named = facts(line).filter((fact) => !kindLabels.has(fact) && !isCount(fact) && !isClock(fact));
+  const album = byline?.runs?.find((run) => run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPRE"))?.text?.trim() ?? null;
+  return { artist: named[0]?.replace(/ - Topic$/, "") ?? null, album };
+}
+function displayLine(line, song) {
+  const shown = facts(line).filter((fact) => !isCount(fact) && !isClock(fact) && !(song && kindLabels.has(fact))).slice(0, 2).map((fact) => fact.replace(/ - Topic$/, ""));
+  return shown.length ? shown.join(" · ") : null;
+}
 function renderer(value, source, index) {
   const first = value.flexColumns?.[0]?.musicResponsiveListItemFlexColumnRenderer?.text;
   const title = text(first) ?? text(value.title);
   if (!title) return null;
-  let subtitle = text(value.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text) ?? text(value.subtitle);
+  const byline = value.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text ?? value.subtitle;
+  let subtitle = text(byline);
   const endpoint = first?.runs?.[0]?.navigationEndpoint ?? value.navigationEndpoint;
   const browse2 = endpoint?.browseEndpoint?.browseId;
   const episode = /^MPED[A-Za-z0-9_-]{11}$/.test(browse2 ?? "") ? browse2.slice(4) : null;
@@ -43,25 +61,30 @@ function renderer(value, source, index) {
   const id = video ?? browse2;
   if (!id) return null;
   const kind = video ? "track" : id.startsWith("UC") ? "artist" : id.startsWith("MPRE") ? "album" : "collection";
+  const artwork = thumbnail(value);
+  const { artist, album } = credits(byline, subtitle);
   return {
     id: `${id}:${index}`,
     reference: { sourceInstanceId: source, itemId: id },
     title,
     kind,
-    subtitle,
-    artwork: thumbnail(value),
+    subtitle: displayLine(subtitle, !!video),
+    artist: video || kind === "album" ? artist : null,
+    album: video ? album : null,
+    artwork,
+    artworkAspect: artwork?.includes("/hq720.") ? "wide" : "square",
     playable: !!video,
     resumePositionMs: 0,
     durationMs: duration(subtitle?.split("•").at(-1)?.trim()) ?? duration(text(value.lengthText)) ?? duration(text(field(value.fixedColumns, "text")))
   };
 }
 var rowKeys = ["musicResponsiveListItemRenderer", "musicTwoRowItemRenderer", "playlistPanelVideoRenderer"];
-function collect(value, source, items, credits = false) {
+function collect(value, source, items, credits2 = false) {
   if (!value || typeof value !== "object" || items.length >= 500) return;
-  for (const key of credits ? rowKeys.slice(0, 2) : rowKeys) {
+  for (const key of credits2 ? rowKeys.slice(0, 2) : rowKeys) {
     const row = value[key];
     if (!row) continue;
-    if (!credits) {
+    if (!credits2) {
       const item = renderer(row, source, items.length);
       if (item) items.push(item);
     } else {
@@ -86,7 +109,7 @@ function collect(value, source, items, credits = false) {
     }
     return;
   }
-  for (const child of Object.values(value)) collect(child, source, items, credits);
+  for (const child of Object.values(value)) collect(child, source, items, credits2);
 }
 function collectShelves(value, source, items, sections, offset) {
   if (!value || typeof value !== "object" || items.length >= 500 || sections.length >= 40) return;
@@ -184,7 +207,8 @@ function parsePlayback({ data }) {
     url: format.url,
     mimeType: format.mimeType.split(";")[0],
     durationMs: Number.isSafeInteger(ms) ? ms : null,
-    canDownload: true
+    canDownload: true,
+    expiresAt: expiresAt(format.url)
   };
 }
 async function resolve({ itemId, options = {} }) {

@@ -1,4 +1,4 @@
-// Provider API v1. HTTP, URL validation, downloads and playback remain native.
+// UniFiles media plugin API v3. HTTP, URL validation, downloads and playback remain native.
 // InnerTube is unofficial. Restricted content is reported, never bypassed.
 const fail = (code, message) => { throw Object.assign(new Error(message), { code }); };
 const videoId = id => {
@@ -26,11 +26,32 @@ function duration(value) {
   const ms = value.split(":").reduce((total, part) => total * 60 + Number(part), 0) * 1000;
   return Number.isSafeInteger(ms) ? ms : null;
 }
+// Signed stream URLs carry their own expiry in seconds. The host needs it in milliseconds.
+function expiresAt(url) {
+  const seconds = Number(/[?&]expire=(\d+)/.exec(url)?.[1]);
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds * 1000 : null;
+}
+const kindLabels = new Set(["Song", "Video", "Album", "Single", "EP", "Playlist"]);
+const isCount = fact => / (?:views|subscribers|plays)$/.test(fact);
+const facts = value => (value ?? "").split(/[•·]/).map(part => part.trim()).filter(Boolean);
+const isClock = fact => /^\d+(?::\d+)+$/.test(fact);
+// The first plain fact is the whole credit: linked runs split "A & B" into separate artists.
+function credits(byline, line) {
+  const named = facts(line).filter(fact => !kindLabels.has(fact) && !isCount(fact) && !isClock(fact));
+  const album = byline?.runs?.find(run => run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPRE"))?.text?.trim() ?? null;
+  return { artist: named[0]?.replace(/ - Topic$/, "") ?? null, album };
+}
+// One display line: no view counts, and no media-kind label on songs.
+function displayLine(line, song) {
+  const shown = facts(line).filter(fact => !isCount(fact) && !isClock(fact) && !(song && kindLabels.has(fact))).slice(0, 2).map(fact => fact.replace(/ - Topic$/, ""));
+  return shown.length ? shown.join(" · ") : null;
+}
 function renderer(value, source, index) {
   const first = value.flexColumns?.[0]?.musicResponsiveListItemFlexColumnRenderer?.text;
   const title = text(first) ?? text(value.title);
   if (!title) return null;
-  let subtitle = text(value.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text) ?? text(value.subtitle);
+  const byline = value.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text ?? value.subtitle;
+  let subtitle = text(byline);
   const endpoint = first?.runs?.[0]?.navigationEndpoint ?? value.navigationEndpoint;
   const browse = endpoint?.browseEndpoint?.browseId;
   // Music episode cards navigate to MPED detail pages but carry a stable YouTube video ID.
@@ -43,9 +64,12 @@ function renderer(value, source, index) {
   const id = video ?? browse;
   if (!id) return null;
   const kind = video ? "track" : id.startsWith("UC") ? "artist" : id.startsWith("MPRE") ? "album" : "collection";
+  const artwork = thumbnail(value);
+  const { artist, album } = credits(byline, subtitle);
   return {
-    id: `${id}:${index}`, reference: { sourceInstanceId: source, itemId: id }, title, kind, subtitle,
-    artwork: thumbnail(value), playable: !!video, resumePositionMs: 0,
+    id: `${id}:${index}`, reference: { sourceInstanceId: source, itemId: id }, title, kind,
+    subtitle: displayLine(subtitle, !!video), artist: video || kind === "album" ? artist : null, album: video ? album : null,
+    artwork, artworkAspect: artwork?.includes("/hq720.") ? "wide" : "square", playable: !!video, resumePositionMs: 0,
     durationMs: duration(subtitle?.split("•").at(-1)?.trim()) ?? duration(text(value.lengthText)) ?? duration(text(field(value.fixedColumns, "text")))
   };
 }
@@ -151,7 +175,7 @@ export function parsePlayback({ data }) {
   const seconds = data.videoDetails?.lengthSeconds;
   const ms = typeof seconds === "string" && /^\d+$/.test(seconds) ? Number(seconds) * 1000 : null;
   return { url: format.url, mimeType: format.mimeType.split(";")[0],
-    durationMs: Number.isSafeInteger(ms) ? ms : null, canDownload: true };
+    durationMs: Number.isSafeInteger(ms) ? ms : null, canDownload: true, expiresAt: expiresAt(format.url) };
 }
 export async function resolve({ itemId, options = {} }) {
   if (options.mode && options.mode !== "audio") fail("unsupported", "This source supports audio playback");

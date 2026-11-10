@@ -2,7 +2,7 @@
 
 Browse and play music from YouTube Music in UniFiles.
 
-Requires UniFiles with media plugin API v2. For an existing installation, use **Update** in Media sources.
+Requires UniFiles with media plugin API v3. For an existing installation, use **Update** in Media sources.
 
 ## Install
 

@@ -1,8 +1,8 @@
 {
   "id": "youtube-music",
   "name": "YouTube Music",
-  "version": "3.0.0",
-  "apiVersion": 2,
+  "version": "4.0.0",
+  "apiVersion": 3,
   "capabilities": [
     "http"
   ],
@@ -28,6 +28,6 @@
     "lh3.googleusercontent.com",
     "yt3.googleusercontent.com"
   ],
-  "entry": "https://github.com/monokaijs/unifiles-youtube-music/releases/download/v3.0.0/youtube.js",
-  "sha256": "769b0ad28fa26039870c44b5a21833f63e6bd7698f90c54c71c783ce6eb9c08c"
+  "entry": "https://github.com/monokaijs/unifiles-youtube-music/releases/download/v4.0.0/youtube.js",
+  "sha256": "037f15d0ba24bf28838c40b830bec3b137e4df5108df9a03e5d09dc322835f76"
 }
